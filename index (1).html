@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Strategie Quiz — HEM · MAF · IBM · CEO</title>
+  <style>
+    :root{--blue:#0b2e59;--blueSoft:#103a73;--blueLine:#1a4b8f;--green:#2fbf71;--greenDark:#239e5c;--white:#fff;--text:#eaf2ff;--textMuted:#c9daf8;--danger:#a61b29}
+    *{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--blue);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+    .container{max-width:1100px;margin:0 auto;padding:24px 16px 56px}
+    h1{margin:0;font-size:24px;font-weight:700}h2{margin:0 0 12px;font-size:18px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.header{padding:16px 0 12px}
+    .badge{display:inline-flex;align-items:center;gap:8px}.dot{width:28px;height:28px;border-radius:6px;background:var(--green)}
+    .segment{display:flex;border:1px solid var(--blueLine);border-radius:8px;overflow:hidden}
+    .segment button{background:transparent;color:var(--text);padding:6px 10px;border:0;border-right:1px solid var(--blueLine);font-size:14px;cursor:pointer}
+    .segment button:last-child{border-right:0}.segment button.active{background:var(--green);color:var(--blue);font-weight:700}
+    .ghost{background:transparent;color:var(--text);border:1px solid var(--blueLine);border-radius:8px;padding:6px 10px;font-size:14px;cursor:pointer}
+    .grid{display:grid;grid-template-columns:1fr;gap:16px}@media(min-width:1024px){.grid{grid-template-columns:2fr 1fr}}
+    .card{background:var(--blueSoft);border:1px solid var(--blueLine);border-radius:16px;box-shadow:0 1px 2px rgba(0,0,0,.1);padding:16px}
+    .pill{display:inline-block;padding:4px 8px;border-radius:8px;font-size:12px;font-weight:700}
+    .flashcard{background:#0d3562;border:1px solid var(--blueLine);border-radius:12px;margin:0 0 12px}
+    .flashcard .head{padding:8px 12px;font-size:12px;font-weight:700;color:var(--green)}.flashcard .body{padding:10px 12px}
+    .choices{display:grid;gap:8px}.choices button{width:100%;text-align:left;border-radius:12px;padding:10px 12px;border:1px solid var(--blueLine);background:#0d3562;color:#fff;opacity:.95;cursor:pointer}
+    .choices button.selected.correct{background:var(--green);color:var(--blue);opacity:1}.choices button.selected.wrong{background:var(--danger);opacity:1}
+    .info-card .title{color:var(--green);font-weight:700;margin-bottom:4px}.muted{color:var(--textMuted)}
+    .footer{display:flex;align-items:center;justify-content:space-between;padding-top:12px}
+    .btn{padding:8px 12px;font-size:14px;border-radius:10px;border:1px solid var(--blueLine);color:#fff;background:transparent;cursor:pointer}
+    .btn.primary{border-color:var(--green);background:var(--green);color:var(--blue)}.btn:disabled{opacity:.4;cursor:not-allowed}
+    .tests{font-size:12px;font-weight:700;margin-left:8px}.tests.ok{color:var(--green)}.tests.fail{color:#ffb4a2}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="row" style="justify-content:space-between">
+        <div class="badge"><div class="dot"></div><h1>Strategie Quiz — HEM · MAF · IBM · CEO</h1></div>
+        <div class="row">
+          <span class="muted" style="font-size:12px">Richting:</span>
+          <div class="segment" id="directionSegment">
+            <button data-dir="HEM" class="active">HEM</button>
+            <button data-dir="MAF">MAF</button>
+            <button data-dir="IBM">IBM</button>
+            <button data-dir="CEO">CEO</button>
+          </div>
+          <button id="resetBtn" class="ghost">↻ Reset</button>
+          <div id="tests" class="tests muted">Self‑tests draaien…</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="card">
+        <h2 id="questionTitle">Vraag 1: …</h2>
+        <div id="flashcard" class="flashcard">
+          <div class="head">Flashcard</div>
+          <div id="flashcardBody" class="body muted">Maak je keuze om het antwoord te zien.</div>
+        </div>
+        <div id="choices" class="choices"></div>
+        <div id="feedback" class="row" style="padding-top:12px;display:none">
+          <span id="feedbackPill" class="pill" style="background:var(--blueLine);color:#fff">Onjuist</span>
+          <span id="feedbackText" style="font-size:14px"></span>
+        </div>
+        <div class="footer">
+          <button id="prevBtn" class="btn">← Vorige</button>
+          <div class="muted" id="scoreBox">Score: 0</div>
+          <button id="nextBtn" class="btn primary">Volgende →</button>
+        </div>
+      </section>
+      <section class="row" style="flex-direction:column">
+        <div class="card info-card"><div class="title">Kernconcept</div><p id="concept" class="muted">—</p></div>
+        <div class="card info-card"><div class="title">Frameworks & verbindingen</div><p id="frameworks" class="muted">—</p></div>
+        <div class="card info-card"><div class="title">Praktijkcase</div><p id="case" class="muted">—</p></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+  // ===== DATASET =========================================================
+  const BASE_QUESTIONS = [
+    { id:1, q:"Welke drie kernvragen moet een strategie beantwoorden?", choices:["Wat doen concurrenten? Hoe groot is de markt? Wat is onze marge?","Waar staan we nu? Waar willen we naartoe? Hoe komen we daar?","Wie is de CEO? Wat is de missie? Hoeveel winst maken we?","Wat is de visie? Wat is de missie? Wat is het budget?"], correctIndex:1, tags:["#strategie","#basis"], context:{concept:"Strategische kernvragen: nulmeting, ambitie, route.",frameworks:"Koppeling met [[missie]]/[[visie]] en [[strategieformulering]].",case:"Veel scale-ups falen omdat de route (implementatie) niet is uitgewerkt, ondanks duidelijke ambitie."}},
+    { id:2, q:"Wat is het onderscheid tussen visie en missie?", choices:["Visie = wat doen we nu; missie = toekomstbeeld","Visie = toekomstbeeld; missie = bestaansreden/werkterrein","Geen onderscheid; beide betekenen hetzelfde","Missie = interne operatie; visie = marketingplan"], correctIndex:1, tags:["#missie","#visie"], context:{concept:"Visie = ‘waarom/waarheen’; missie = ‘wat & voor wie’.",frameworks:"9 missiecomponenten (o.a. klanten, producten, markten, technologie, groei/winst, filosofie, onderscheidende competentie, publiek imago, werknemers).",case:"Puma’s oude ‘mission’ (“DESTROY ADIDAS”) is geen goede missie; te competitief geformuleerd, niet klantgericht."}},
+    { id:3, q:"Welke component hoort NIET bij de 9 missiecomponenten?", choices:["Klanten","Producten/diensten","Dividendbeleid","Publiek imago"], correctIndex:2, tags:["#missie","#9componenten"], context:{concept:"9 componenten helpen richting en consistentie te borgen.",frameworks:"[[Missie]] ↔ [[Stakeholderanalyse]].",case:"Veel MKB’s vergeten ‘technologie’: digitalisering raakt vrijwel elke sector in NL/EU."}},
+    { id:4, q:"Wat is het doel van een PESTLE-analyse?", choices:["Interne processen optimaliseren","Externe macro-ontwikkelingen systematisch in kaart brengen","Concurrentenbenchmark opstellen","Kostenleiderschap realiseren"], correctIndex:1, tags:["#PESTLE","#extern"], context:{concept:"PESTLE: Political, Economic, Social, Technological, Legal, Environmental.",frameworks:"Input voor [[EFE-matrix]].",case:"Energieprijzen (E) en AI-regelgeving (L) beïnvloeden Nederlandse dienstverleners sterk."}},
+    { id:5, q:"Wat doet de EFE-matrix met PESTLE-uitkomsten?", choices:["Zet ze om in financiële KPI’s","Weegt kansen/bedreigingen en kwantificeert belangrijkheid","Vervangt Porter’s Five Forces","Maakt interne sterktes en zwaktes zichtbaar"], correctIndex:1, tags:["#EFE","#weging"], context:{concept:"EFE = External Factor Evaluation: gewicht × rating per factor.",frameworks:"[[PESTLE]] → [[EFE-matrix]] → input voor [[strategieformulering]].",case:"Retail in NL weegt ‘koopkracht (E)’ en ‘duurzaamheid (Env)’ zwaarder sinds 2023-2025."}},
+    { id:6, q:"Welke is GEEN kracht in Porter’s Five Forces?", choices:["Toetreders","Substituten","Overheidsbeleid","Leveranciers"], correctIndex:2, tags:["#Porter5","#concurrentie"], context:{concept:"Five Forces: Rivaliteit, Toetreders, Leveranciers, Afnemers, Substituten.",frameworks:"Link met [[KSF/CSF]] en [[positioneringsmatrix]].",case:"Thuisbezorging: hoge rivaliteit en veel substituten (koken zelf, afhalen)."}},
+    { id:7, q:"Waarvoor gebruik je de CPM (Competitive Profile Matrix)?", choices:["Externe macrotrends scoren","Belangrijkste concurrenten scoren op KSF’s om positie te vergelijken","Wettelijke risico’s inventariseren","Interne processen mappen"], correctIndex:1, tags:["#CPM","#benchmark"], context:{concept:"CPM: gewicht × score per KSF per concurrent.",frameworks:"[[KSF/CSF]] ↔ [[CPM]].",case:"Telecom NL: netwerkdekking en bundelprijs wegen zwaar in CPM."}},
+    { id:8, q:"Wat is een Kritieke/Key Succesfactor (KSF/CSF)?", choices:["Een willekeurige KPI","Een factor die doorslaggevend is voor concurrentievoordeel in de sector","Interne kostensoftware","Een marketingcampagne"], correctIndex:1, tags:["#KSF","#CSF"], context:{concept:"KSF’s zijn sectorspecifiek en bepalen de lat.",frameworks:"Afgeleid uit [[Five Forces]] en klantbehoeften; gebruikt in [[CPM]].",case:"Online supermarkt: last-mile efficiëntie en assortiment zijn KSF’s."}},
+    { id:9, q:"Wat toont de positioneringsmatrix?", choices:["Relatie tussen interne afdelingen","Relatieve positie van spelers op 2 gekozen strategische assen","Juridische conformiteit","Cashflowprojecties"], correctIndex:1, tags:["#positionering"], context:{concept:"Twee relevante assen kiezen (bijv. prijs × kwaliteit).",frameworks:"Voedt [[segmentatie]] en [[waardestrategie]].",case:"Fietsenmarkt: Van budget (Decathlon) tot premium (Gazelle e-bikes)."}},
+    { id:10, q:"Waarom koppel je KSF’s aan de Five Forces?", choices:["Om macrotrends te negeren","Om te herleiden welke krachten ‘winnen’ en waar te excelleren","Voor compliance-doeleinden","Zodat pricing irrelevant wordt"], correctIndex:1, tags:["#KSF","#FiveForces"], context:{concept:"Krachten bepalen waar waarde lekt of ontstaat.",frameworks:"[[Five Forces]] → afleiden van [[KSF]].",case:"Plattformen: onderhandelingsmacht afnemers hoog ⇒ KSF = switching costs verhogen."}},
+    { id:11, q:"Wat is een logische volgorde van analyses (extern)?", choices:["CPM → PESTLE → EFE","PESTLE → EFE → Five Forces → KSF → CPM","KSF → EFE → PESTLE","Positioneringsmatrix → EFE → PESTLE"], correctIndex:1, tags:["#proces","#extern"], context:{concept:"Eerst macro (PESTLE), dan wegen (EFE), dan branche (5F).",frameworks:"Uitkomst voedt [[KSF]] en [[CPM]].",case:"Energiecrisis (E) 2022→ hogere kostenpositie in veel sectoren in NL/EU."}},
+    { id:12, q:"Wat test je met de vraag ‘Is de kwestie strategisch?’ bij de tolpoort?", choices:["Of het juridisch toelaatbaar is","Of het langetermijn-impact en cross-functionele consequenties heeft","Of het marketingbudget toereikend is","Of het productieproces stabiel is"], correctIndex:1, tags:["#tolpoort","#governance"], context:{concept:"Strategische issues: significant, onzeker, richtinggevend.",frameworks:"[[Tollgates]] voor go/no-go tijdens project.",case:"Nieuwe markt betreden (DACH) voor NL SaaS: duidelijk strategisch (resources, risico, ROI)."}},
+    { id:13, q:"Wat is GEEN doel van een missie/visie?", choices:["Richting geven","Stakeholders alignen","Exacte KPI’s per kwartaal vastleggen","Identiteit uitdragen"], correctIndex:2, tags:["#missie","#visie"], context:{concept:"Missie/visie = kader, geen kwartaal-OKR’s.",frameworks:"[[Mission statement]] ↔ [[strategie]].",case:"Veel start-ups verwarren ‘vision deck’ met kwartaalplanning."}},
+    { id:14, q:"Welke kracht in Five Forces meet de druk op marges door alternatieven?", choices:["Rivaliteit","Substituten","Afnemers","Toetreders"], correctIndex:1, tags:["#Porter5"], context:{concept:"Substituten verhogen prijselasticiteit.",frameworks:"[[Five Forces]] ↔ prijsstrategie.",case:"OV vs deelstep vs fiets in NL-steden: veel substitutie."}},
+    { id:15, q:"Wat betekent ‘gewicht’ in EFE/CPM?", choices:["Hoe belangrijk de factor is relatief t.o.v. andere factoren","Hoe zeker de data is","Het aantal KPI’s dat je hebt","De wettelijke prioriteit"], correctIndex:0, tags:["#gewicht","#EFE","#CPM"], context:{concept:"Gewichten sommeren naar 1.0 (100%).",frameworks:"[[EFE]] en [[CPM]].",case:"In NL food retail weegt ‘locatie’ traditioneel hoog, online groei verschuift dit."}},
+    { id:16, q:"Wat maakt een KSF ‘kritiek’?", choices:["Dat het eenvoudig is te meten","Dat het noodzakelijk is om de basisverwachting van klanten te halen","Dat het zelden verandert","Dat het wettelijk verplicht is"], correctIndex:1, tags:["#KSF"], context:{concept:"Zonder KSF-performance verlies je vanzelf marktaandeel.",frameworks:"[[KSF]] ↔ [[waardestrategie]].",case:"Bezorgsnelheid in e-commerce is baseline in NL; onder de norm = churn."}},
+    { id:17, q:"Wat is een juiste toepassing van de positioneringsmatrix?", choices:["Arbitraire assen kiezen die niets met waardeperceptie te maken hebben","Strategische assen kiezen die relevant zijn voor klantwaarde","Assen kiezen op basis van interne hiërarchie","Assen kiezen die niet te meten zijn"], correctIndex:1, tags:["#positionering"], context:{concept:"Assen moeten klantrelevant en onderscheidend zijn.",frameworks:"[[Positioneringsmatrix]] ↔ [[segmentatie]].",case:"Hotels NL: ‘locatie’ × ‘beleving’ positioneert budget vs boutique."}},
+    { id:18, q:"Welke output verwacht je na Five Forces + KSF?", choices:["Gedetailleerd productiehandboek","Inzicht in waar te differentiëren of kosten te verlagen","Alleen een marketingkalender","Alleen juridische risico’s"], correctIndex:1, tags:["#FiveForces","#KSF"], context:{concept:"Strategische keuzes: differentiatie, focus of kostenleiderschap.",frameworks:"Link met [[Porter waardestrategieën]].",case:"FMCG: private label druk ⇒ of kosten omlaag of merkwaarde op."}},
+    { id:19, q:"Wat hoort NIET thuis in een EFE-matrix?", choices:["Kansen","Bedreigingen","Interne sterktes","Belangrijkheidsgewichten"], correctIndex:2, tags:["#EFE"], context:{concept:"Interne factoren horen bij [[IFE]], niet EFE.",frameworks:"[[PESTLE]] → [[EFE]]; [[SWOT]] integreert E/I.",case:"Verwar EFE (extern) niet met IFE (intern)."}},
+    { id:20, q:"Wat is het doel van een tollgate (tolpoort) in het project?", choices:["Administratieve boetes uitdelen","Kwaliteit van beslissingen bewaken via gestructureerde go/no-go","Alleen budget rapporteren","Teamleden beoordelen"], correctIndex:1, tags:["#tolpoort","#project"], context:{concept:"Tolpoorten verlagen risico’s en verhogen alignment.",frameworks:"[[Stage-Gate]] aanpak.",case:"Week 5: docent keurt strategische opties (breedte/diepte)."}},
+    { id:21, q:"Wat is het primaire doel van een missie t.o.v. visie?", choices:["Een emotioneel toekomstbeeld schetsen","Het huidige bestaansrecht en werkterrein afbakenen","Alleen financiële doelen stellen","Een organogram presenteren"], correctIndex:1, tags:["#missie","#visie"], context:{concept:"Missie = what/for whom; visie = why/where-to.",frameworks:"[[9 missiecomponenten]].",case:"Ziekenhuis NL: missie focust op patiëntwaarde en kwaliteit van zorg."}},
+    { id:22, q:"Welke twee inputs kies je meestal voor een positioneringsmatrix?", choices:["Twee willekeurige financiële ratio’s","Twee klantrelevante strategische dimensies","Twee juridische criteria","Twee interne cultuurwaarden"], correctIndex:1, tags:["#positionering"], context:{concept:"Dimensies moeten verschillen in waardeperceptie zichtbaar maken.",frameworks:"[[Positionering]] ↔ [[waardepropositie]].",case:"NL supermarkten: prijs × versassortiment positioneert ALDI vs AH."}},
+    { id:23, q:"Wat test je met een CPM t.o.v. ‘gevoel’?", choices:["Of je HR-cyclus werkt","Of de onderbuik klopt door scores op dezelfde KSF’s te vergelijken","Of de boekhouding up-to-date is","Of de supply chain duurzaam is"], correctIndex:1, tags:["#CPM"], context:{concept:"Structureert vergelijking; voorkomt cherry picking.",frameworks:"[[KSF]] → [[CPM]].",case:"Mobiele providers: netwerk, prijs, service, bundels, merk."}},
+    { id:24, q:"Wat betekent het als EFE-totaalscore < 2.5 (op 4)?", choices:["Sterke externe positie","Gemiddelde positie","Onder gemiddelde respons op externe factoren","Score zegt niets over extern"], correctIndex:2, tags:["#EFE","#interpretatie"], context:{concept:"Lager dan 2.5 = ondergemiddelde benutting/klaring van externe factoren.",frameworks:"[[EFE]] schaal 1–4.",case:"Nieuwe toetreders verrassen incumbents ⇒ lage EFE."}},
+    { id:25, q:"Wat is een logisch vervolg na CPM?", choices:["Niets, CPM is einddoel","Strategie kiezen/valideren op basis van gevonden gaten en sterktes","Alleen HR-beleid aanpassen","Juridische audit starten"], correctIndex:1, tags:["#strategie","#CPM"], context:{concept:"Gatenanalyse → actieplan.",frameworks:"[[OKR’s]] of [[Balanced Scorecard]] voor implementatie.",case:"Retailer verbetert online search & pick-up na CPM-gap."}},
+    { id:26, q:"Welke uitspraak over substituten is juist?", choices:["Substituten zijn alleen directe concurrenten","Substituten kunnen uit andere industrieën komen","Substituten bestaan niet in dienstenmarkten","Substituten spelen geen rol in prijszetting"], correctIndex:1, tags:["#substituten","#Porter5"], context:{concept:"Netflix vs bioscoop vs gaming = cross-industry substitutie.",frameworks:"[[Five Forces]] substitutiedruk.",case:"OV vs (e‑)bike in NL steden."}},
+    { id:27, q:"Waarom is ‘onderscheidende competentie’ een missiecomponent?", choices:["Omdat elk bedrijf uniek wil lijken","Omdat het kern is van duurzaam concurrentievoordeel","Omdat wetgeving dat vereist","Omdat het goed klinkt in PR"], correctIndex:1, tags:["#missie","#competentie"], context:{concept:"Link met resources/capabilities (VRIO).",frameworks:"[[RBV]] ↔ [[missie]].",case:"ASML: lithografie knowhow is onderscheidend (EU context)."}},
+    { id:28, q:"Wat is de best passende tool om rivaliteit te beoordelen?", choices:["SWOT","Five Forces","PESTLE","BMC"], correctIndex:1, tags:["#rivaliteit","#Porter5"], context:{concept:"Rivaliteit is één van de 5 krachten.",frameworks:"[[Five Forces]].",case:"Airlines EU: hoge rivaliteit wegens overcapaciteit en prijsdruk."}},
+    { id:29, q:"Wat doe je na een positioneringsplot?", choices:["Niets; plaatje is genoeg","Valideer met klantinzichten en toets strategische opties","Alleen interne doorbelasting aanpassen","Implementatie negeren"], correctIndex:1, tags:["#positionering","#validatie"], context:{concept:"Plot = hypothese, valideer met data (NL/EU).",frameworks:"[[JTBD]]/[[Value Proposition Canvas]].",case:"Nieuwe premium‑claim testen via NPS/prijsbereidheid in NL-markt."}},
+    { id:30, q:"Wat is het voordeel van tollgates in onderwijscontext (weekplanning)?", choices:["Studenten hoeven minder te doen","Vroegtijdige feedbackmomenten verhogen kans op eindkwaliteit (pass/fail)","Alleen administratie","Geen voordeel"], correctIndex:1, tags:["#onderwijs","#tolpoort"], context:{concept:"Formative checks verminderen herwerk aan het einde.",frameworks:"[[Stage-Gate]] didactisch toegepast.",case:"Week 1–5: goedkeuringen in de klas + upload voor vastlegging."}}
+  ];
+
+  const DIRECTION_OVERRIDES = {
+    HEM:{
+      4:{HEM:{q:"PESTLE bij hotels & events: welke factor raakt vergunningen en geluidsnormen het meest?",choices:["Technological","Legal","Economic"],correctIndex:1,answer:"Legal — vergunningen/geluid/veiligheid vallen onder wet- en regelgeving."}},
+      5:{HEM:{q:"EFE: welke externe factor krijgt vaak hoog gewicht in city‑events?",choices:["Seizoensgebonden toerisme (S)","Valutakoersen (E)","Datacenterkosten (T)"],correctIndex:0,answer:"Social — seizoenspatronen en toeristenstromen drukken sterk op vraag."}},
+      7:{HEM:{q:"CPM: welke KSF is doorslaggevend voor hotels?",choices:["Locatie & bezettingsgraad","Aantal LinkedIn‑volgers","Kantoorkleur"],correctIndex:0,answer:"Locatie drijft ADR en occupancy; samen bepalend voor RevPAR."}},
+      8:{HEM:{q:"KSF in eventmanagement?",choices:["Operationele veiligheid & crowd control","Lettertype van posters","Aantal hashtags"],correctIndex:0,answer:"Veiligheid/crowd control zijn licentie‑to‑operate."}},
+      9:{HEM:{q:"Positionering hotels: welke assen zijn logisch?",choices:["Prijs × Beleving/Service","EBIT × CO2","Payroll × IFRS"],correctIndex:0,answer:"Gasten kiezen op prijs en ervaren beleving/service."}},
+      18:{HEM:{q:"Na Five Forces + KSF in hospitality, welke optie past?",choices:["Service‑design verbeteren","IFRS herindelen","Datacenter verplaatsen"],correctIndex:0,answer:"Differentieer via service‑design en guest journey."}}
+    },
+    MAF:{
+      4:{MAF:{q:"PESTLE in makelaardij: wat raakt woningtransacties direct?",choices:["Renteontwikkelingen (E)","Gamingtrends (S)","Quantumcomputing (T)"],correctIndex:0,answer:"Economisch — rente beïnvloedt betaalbaarheid en vraag."}},
+      5:{MAF:{q:"EFE: welke macrofactor weeg je zwaar in taxaties?",choices:["Wet- en regelgeving (L)","Filmreleases (S)","Nieuwe emoji’s (T)"],correctIndex:0,answer:"Legal — stikstof/energie‑labels/huurregulering."}},
+      7:{MAF:{q:"CPM: KSF voor makelaarskantoren?",choices:["Leadkwaliteit & conversie","Kantoormascotte","Aantal bureaustoelen"],correctIndex:0,answer:"Sterke funnel en conversie bepalen marktaandeel."}},
+      8:{MAF:{q:"KSF voor woningverkoop?",choices:["Lokale marktkennis & netwerk","Aantal TikToks","Aantal visitekaartjes"],correctIndex:0,answer:"Lokale kennis en netwerk versnellen transacties."}},
+      9:{MAF:{q:"Positionering makelaars: logische assen?",choices:["Courtage × Dienstdiepte","WACC × ROE","EBITDA × CAPEX"],correctIndex:0,answer:"Prijs (courtage) vs. diepte (styling, 3D tours, ontzorging)."}},
+      18:{MAF:{q:"Na 5F + KSF in makelaardij: actie?",choices:["Digitale lead‑nurture uitbouwen","Serverruimte uitbreiden","Productielijn optimaliseren"],correctIndex:0,answer:"Marketing automation verhoogt conversie/doorlooptijd."}}
+    },
+    IBM:{
+      4:{IBM:{q:"PESTLE in international business: wat raakt export het meest?",choices:["Handelstarieven (L/P)","Lokale sportuitslagen (S)","Lettertypekeuze (S)"],correctIndex:0,answer:"Policy/Legal — tarieven/sancties beïnvloeden marktoegang."}},
+      5:{IBM:{q:"EFE‑weging voor wereldwijde supply chains?",choices:["FX‑volatiliteit (E)","Modekleur van het jaar (S)","Koffieautomaat (T)"],correctIndex:0,answer:"Economisch — FX‑schommelingen raken marge en pricing."}},
+      7:{IBM:{q:"CPM: KSF tussen internationale concurrenten?",choices:["Distributiereikwijdte","Kantoorplantsoort","Aantal parkeerplaatsen"],correctIndex:0,answer:"Distributiebereik bepaalt levertijd en beschikbaarheid."}},
+      8:{IBM:{q:"KSF bij global B2B sales?",choices:["Key‑account management","Stickerdesign","Stoelkleur"],correctIndex:0,answer:"Relatiebeheer in koopcentra (DMU) is cruciaal."}},
+      9:{IBM:{q:"Positionering internationaal merk: assen?",choices:["Prijs × Betrouwbaarheid","HR‑ratio × BOH","CO2 × EBIT"],correctIndex:0,answer:"Prijs/betrouwbaarheid sturen B2B‑perceptie."}},
+      18:{IBM:{q:"Na 5F + KSF: welke strategische zet?",choices:["Lokale partnerschappen aangaan","HQ‑muur schilderen","Printer upgraden"],correctIndex:0,answer:"Joint ventures/partners versnellen marktoegang."}}
+    },
+    CEO:{
+      4:{CEO:{q:"PESTLE in commerciële economie: wat raakt digitale advertising?",choices:["Privacywetgeving (L)","Weerbericht (E)","USB‑standaard (T)"],correctIndex:0,answer:"Legal — consent/cookies beïnvloeden targeting/meetbaarheid."}},
+      5:{CEO:{q:"EFE: welke factor weeg je bij go‑to‑market?",choices:["Klantbestedingen (E)","Kantoorvloer (S)","Maanstand (E)"],correctIndex:0,answer:"Economisch — koopkracht bepaalt adoptiesnelheid."}},
+      7:{CEO:{q:"CPM: KSF voor commerciële teams?",choices:["CAC/LTV performance","Aantal logo’s","Kleur muismat"],correctIndex:0,answer:"Gezonde CAC/LTV is basis voor schaalbaarheid."}},
+      8:{CEO:{q:"KSF in omnichannel retail?",choices:["Assortiment & fulfilment","Kantoorslogan","Aantal vergaderruimtes"],correctIndex:0,answer:"Breed assortiment + snelle fulfilment winnen."}},
+      9:{CEO:{q:"Positionering consumentenmerk: assen?",choices:["Prijs × Waardeperceptie","EBIT × WACC","AVG × VPN"],correctIndex:0,answer:"Prijs/waarde sturen consumentkeuze."}},
+      18:{CEO:{q:"Na 5F + KSF: commerciële actie?",choices:["Prijs‑/promotiestrategie testen","Serverrack poetsen","Kantine uitbreiden"],correctIndex:0,answer:"Prijs/Promo‑experimenten optimaliseren marge/volume."}}
+    }
+  };
+
+  const state = { direction:'HEM', questions:[...BASE_QUESTIONS], index:0, answers:{}, showFeedback:false };
+
+  function applyDirection(qs, dir){
+    return qs.map(q=>{ const byId = (DIRECTION_OVERRIDES[dir]||{})[q.id]; const ov = byId? byId[dir]: undefined; if(!ov) return q; return {...q, q: ov.q??q.q, choices: ov.choices??q.choices, correctIndex: ov.correctIndex??q.correctIndex, answer: ov.answer??q.answer}; });
+  }
+  function makeDisplayChoices(q){ const total=q.choices.length; if(total<=3) return {choices:q.choices, correctIndex:q.correctIndex}; const idx1=(q.correctIndex+1)%total, idx2=(q.correctIndex+2)%total; const mapped=[q.choices[q.correctIndex], q.choices[idx1], q.choices[idx2]]; return {choices:mapped, correctIndex:0}; }
+  function shouldShowFlashcard(show){return !!show}
+
+  function runSelfTests(){
+    const msgs=[]; let ok=true;
+    const t1=makeDisplayChoices({q:'t',choices:['A','B','C','D'],correctIndex:2}); if(!(t1.choices.length===3&&t1.correctIndex===0&&t1.choices[0]==='C')){ok=false;msgs.push('Test1 faalt: makeDisplayChoices(4→3)')}
+    const t2=makeDisplayChoices({q:'t',choices:['A','B','C'],correctIndex:1}); if(!(t2.choices.length===3&&t2.choices[1]==='B'&&t2.correctIndex===1)){ok=false;msgs.push('Test2 faalt: makeDisplayChoices(<=3)')}
+    const base=[{id:4,q:'x',choices:['P','Q','R'],correctIndex:0}], over=applyDirection(base,'HEM'); if(!(over[0].q.includes('PESTLE')&&over[0].choices.length===3)){ok=false;msgs.push('Test3 faalt: applyDirection override')}
+    if(BASE_QUESTIONS.length!==30){ok=false;msgs.push(`Test4 faalt: verwacht 30 vragen, kreeg ${BASE_QUESTIONS.length}`)}
+    BASE_QUESTIONS.forEach((q,i)=>{const vc=Array.isArray(q.choices)&&q.choices.length>=3; const vi=Number.isInteger(q.correctIndex)&&q.correctIndex>=0&&q.correctIndex<q.choices.length; if(!vc||!vi){ok=false;msgs.push(`Test4 faalt: vraag ${i+1} ongeldige keuzes/correctIndex`)}});
+    ['HEM','MAF','IBM','CEO'].forEach(dir=>{const templ=[{id:4,q:'x',choices:['A','B','C'],correctIndex:0}], out=applyDirection(templ,dir), d=out[0]; if(!(d&&d.choices&&d.choices.length===3)){ok=false;msgs.push(`Test5 faalt: override lengte ≠ 3 voor ${dir}`)}});
+    if(!(shouldShowFlashcard(false)===false&&shouldShowFlashcard(true)===true)){ok=false;msgs.push('Test6 faalt: flashcard policy')}
+    const sample=[{id:4,q:'orig',choices:['A','B','C'],correctIndex:0}], before=JSON.stringify(sample); void applyDirection(sample,'HEM'); if(JSON.stringify(sample)!==before){ok=false;msgs.push('Test7 faalt: applyDirection muteert input')}
+    return {ok,msgs};
+  }
+
+  const testsEl=document.getElementById('tests');
+  const tests=runSelfTests(); testsEl.textContent= tests.ok? 'Self‑tests: OK' : `Self‑tests: Fouten — ${tests.msgs.join('; ')}`; testsEl.className = 'tests '+(tests.ok?'ok':'fail');
+
+  const dirSeg=document.getElementById('directionSegment');
+  const resetBtn=document.getElementById('resetBtn');
+  const titleEl=document.getElementById('questionTitle');
+  const flashEl=document.getElementById('flashcard');
+  const flashBody=document.getElementById('flashcardBody');
+  const choicesEl=document.getElementById('choices');
+  const feedback=document.getElementById('feedback');
+  const feedbackPill=document.getElementById('feedbackPill');
+  const feedbackText=document.getElementById('feedbackText');
+  const prevBtn=document.getElementById('prevBtn');
+  const nextBtn=document.getElementById('nextBtn');
+  const scoreBox=document.getElementById('scoreBox');
+  const infoConcept=document.getElementById('concept');
+  const infoFrameworks=document.getElementById('frameworks');
+  const infoCase=document.getElementById('case');
+
+  function computeScore(){ return state.questions.reduce((acc,q)=>{ const d=makeDisplayChoices(q); return state.answers[q.id]===d.correctIndex? acc+1: acc; },0); }
+
+  function render(){
+    [...dirSeg.querySelectorAll('button')].forEach(btn=>{btn.classList.toggle('active', btn.dataset.dir===state.direction)});
+    const current=state.questions[state.index];
+    const disp=current? makeDisplayChoices(current) : {choices:[],correctIndex:0};
+    titleEl.textContent=`Vraag ${state.index+1}: ${current.q}`;
+
+    if(shouldShowFlashcard(state.showFeedback)){
+      flashEl.querySelector('.head').textContent='Flashcard · Antwoord';
+      flashBody.classList.remove('muted');
+      flashBody.textContent = current.answer ?? disp.choices[disp.correctIndex];
+    }else{
+      flashEl.querySelector('.head').textContent='Flashcard';
+      flashBody.classList.add('muted');
+      flashBody.textContent = 'Maak je keuze om het antwoord te zien.';
+    }
+
+    choicesEl.innerHTML='';
+    const answered = state.answers[current.id] ?? null;
+    disp.choices.forEach((c,idx)=>{
+      const btn=document.createElement('button');
+      btn.textContent=c;
+      const selected = answered===idx; const correct = idx===disp.correctIndex;
+      if(selected){ btn.classList.add('selected'); btn.classList.add(correct?'correct':'wrong'); }
+      btn.addEventListener('click',()=>{ state.answers[current.id]=idx; state.showFeedback=true; render(); });
+      choicesEl.appendChild(btn);
+    });
+
+    const isCorrect = answered!==null && answered===disp.correctIndex;
+    if(state.showFeedback){
+      feedback.style.display='flex';
+      feedbackPill.textContent = isCorrect ? 'Juist' : 'Onjuist';
+      feedbackPill.style.background = isCorrect ? 'var(--green)' : 'var(--blueLine)';
+      feedbackPill.style.color = isCorrect ? 'var(--blue)' : '#fff';
+      feedbackText.textContent = isCorrect ? '' : `Correct: ${disp.choices[disp.correctIndex]}`;
+    }else{ feedback.style.display='none'; }
+
+    prevBtn.disabled = state.index===0;
+    nextBtn.disabled = state.index===state.questions.length-1;
+    scoreBox.textContent = `Score: ${computeScore()}`;
+
+    infoConcept.textContent = current.context?.concept || 'Kernidee bij deze vraag rondom strategisch management.';
+    infoFrameworks.textContent = current.context?.frameworks || 'Zie gerelateerde modellen zoals PESTLE, EFE, Five Forces, KSF/CSF, CPM en positionering.';
+    infoCase.textContent = current.context?.case || 'Korte NL/EU case om de theorie tastbaar te maken.';
+  }
+
+  dirSeg.addEventListener('click', (e)=>{
+    const btn=e.target.closest('button'); if(!btn) return; const dir=btn.dataset.dir; if(!dir) return;
+    state.direction=dir; state.questions=applyDirection(BASE_QUESTIONS, dir); state.index=0; state.answers={}; state.showFeedback=false; render();
+  });
+  resetBtn.addEventListener('click',()=>{ state.answers={}; state.index=0; state.showFeedback=false; render(); });
+  prevBtn.addEventListener('click',()=>{ state.showFeedback=false; state.index=Math.max(0, state.index-1); render(); });
+  nextBtn.addEventListener('click',()=>{ state.showFeedback=false; state.index=Math.min(state.questions.length-1, state.index+1); render(); });
+
+  state.questions=applyDirection(BASE_QUESTIONS, state.direction);
+  render();
+  </script>
+</body>
+</html>
